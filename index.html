@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ShopMail</title>
+<style>
+body{font-family:Arial;background:#fff7ed;margin:0;padding:20px}
+.box{max-width:600px;margin:auto;background:white;padding:25px;border-radius:20px;box-shadow:0 10px 30px rgba(0,0,0,0.1)}
+h1{color:#ea580c;text-align:center;margin:0}
+p.sub{text-align:center;color:#666}
+label{font-weight:bold;display:block;margin-top:15px}
+input,textarea{width:100%;padding:12px;margin-top:5px;border:2px solid #fed7aa;border-radius:10px;font-size:16px;box-sizing:border-box}
+button{width:100%;background:#ea580c;color:white;border:none;padding:15px;border-radius:12px;font-size:18px;font-weight:bold;margin-top:20px;cursor:pointer}
+button:hover{background:#c2410c}
+.preview{background:#fffbeb;border:2px dashed #f59e0b;padding:15px;border-radius:12px;margin-top:20px}
+.count{background:#dcfce7;padding:10px;border-radius:10px;text-align:center;font-weight:bold;margin-top:15px}
+.welcome{text-align:center;padding:20px 10px}
+.welcome .emoji{font-size:70px}
+.welcome h1{font-size:32px;line-height:1.2}
+.welcome p{color:#555;font-size:17px;line-height:1.5}
+.welcome .features{background:#fffbeb;padding:15px;border-radius:12px;text-align:left;margin-top:15px}
+</style>
+</head>
+<body>
+
+<div class="box" id="welcomeScreen">
+<div class="welcome">
+<div class="emoji">📧🎉</div>
+<h1>Welcome to<br>ShopMail!</h1>
+<p>Hello Shop Owner! 👋<br><br>Are you tired of sending messages one by one to your customers?<br><br><b>ShopMail will help you send your promo to ALL your customers at once — in 1 click!</b></p>
+<div class="features">
+✅ Send to 100s of customers at once<br>
+✅ Free for your first 100 emails a day<br>
+✅ Made for all business, by people from across the globe!
+</div>
+<p><b>Ready to grow your shop?</b></p>
+<button onclick="startApp()">Let's Start 🚀</button>
+<p style="font-size:13px;color:#999">Made with 💜 by Stupendous-meerkat</p>
+</div>
+</div>
+
+<div class="box" id="mainApp" style="display:none">
+<h1>📧 ShopMail</h1>
+<p class="sub">Send promos to all your customers at once!</p>
+
+<label>Your Shop Name</label>
+<input id="shop" placeholder="e.g. Abigail's Fashion Hub">
+
+<label>Your Email for Replies 📩</label>
+<input id="replyEmail" placeholder="e.g. my-shop@gmail.com">
+<p style="font-size:13px;color:#666;margin:5px 0 0">When customers press Reply, it will go to this email!</p>
+
+<label>Promo Title</label>
+<input id="title" placeholder="e.g. New Shoes Just Arrived! 20% OFF Today!">
+
+<label>Your Message</label>
+<textarea id="msg" rows="4" placeholder="Hello my lovely customers! New stock has arrived... Come today!"></textarea>
+
+<label>Customer Emails (one per line)</label>
+<textarea id="emails" rows="5" placeholder="customer1@gmail.com
+customer2@gmail.com"></textarea>
+
+<div class="count" id="count">👥 0 customers added</div>
+
+<button onclick="preview()">👀 Preview My Promo</button>
+
+<div class="preview" id="preview" style="display:none">
+<h3 id="pTitle"></h3>
+<p><b>From:</b> <span id="pShop"></span></p>
+<p><b>Reply to:</b> <span id="pReply"></span></p>
+<p id="pMsg"></p>
+</div>
+
+<button onclick="send()" style="background:#16a34a">🚀 SEND TO ALL CUSTOMERS</button>
+<p id="result" style="text-align:center;font-weight:bold"></p>
+<button onclick="goBack()" style="background:#eee;color:#333">⬅ Back to Welcome</button>
+</div>
+
+<script>
+function startApp(){
+  document.getElementById('welcomeScreen').style.display='none';
+  document.getElementById('mainApp').style.display='block';
+  window.scrollTo(0,0);
+}
+function goBack(){
+  document.getElementById('mainApp').style.display='none';
+  document.getElementById('welcomeScreen').style.display='block';
+  window.scrollTo(0,0);
+}
+let emailsEl = document.getElementById('emails');
+emailsEl.addEventListener('input', function(){
+  let list = emailsEl.value.split('\n').filter(e=>e.includes('@'));
+  document.getElementById('count').innerText = '👥 ' + list.length + ' customers added';
+});
+function preview(){
+  document.getElementById('preview').style.display='block';
+  document.getElementById('pShop').innerText = document.getElementById('shop').value || 'Your Shop';
+  document.getElementById('pReply').innerText = document.getElementById('replyEmail').value || 'Your email';
+  document.getElementById('pTitle').innerText = document.getElementById('title').value || 'Your Promo Title';
+  document.getElementById('pMsg').innerText = document.getElementById('msg').value || 'Your message will show here...';
+}
+async function send(){
+  let list = emailsEl.value.split('\n').filter(e=>e.includes('@'));
+  if(list.length===0){ alert('Add at least 1 customer email first!'); return; }
+  let replyEmail = document.getElementById('replyEmail').value;
+  if(!replyEmail.includes('@')){ alert('Please add your email for replies first!'); return; }
+  let data = {
+    shop: document.getElementById('shop').value,
+    replyEmail: replyEmail,
+    title: document.getElementById('title').value,
+    message: document.getElementById('msg').value,
+    emails: list
+  };
+  document.getElementById('result').innerText = 'Sending... please wait... ⏳';
+  try{
+    await fetch('/.netlify/functions/send', { method: 'POST', body: JSON.stringify(data) });
+    document.getElementById('result').innerText = '✅ SENT! Your promo went to ' + list.length + ' customers for real!';
+    alert('✅ SENT! Replies will go to ' + replyEmail);
+  } catch(e){
+    document.getElementById('result').innerText = '⚠️ Backend not connected yet.';
+  }
+}
+</script>
+</body>
+</html>
