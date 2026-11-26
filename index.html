@@ -1,124 +1,184 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ShopMail</title>
 <style>
-body{font-family:Arial;background:#fff7ed;margin:0;padding:20px}
-.box{max-width:600px;margin:auto;background:white;padding:25px;border-radius:20px;box-shadow:0 10px 30px rgba(0,0,0,0.1)}
-h1{color:#ea580c;text-align:center;margin:0}
-p.sub{text-align:center;color:#666}
-label{font-weight:bold;display:block;margin-top:15px}
-input,textarea{width:100%;padding:12px;margin-top:5px;border:2px solid #fed7aa;border-radius:10px;font-size:16px;box-sizing:border-box}
-button{width:100%;background:#ea580c;color:white;border:none;padding:15px;border-radius:12px;font-size:18px;font-weight:bold;margin-top:20px;cursor:pointer}
-button:hover{background:#c2410c}
-.preview{background:#fffbeb;border:2px dashed #f59e0b;padding:15px;border-radius:12px;margin-top:20px}
-.count{background:#dcfce7;padding:10px;border-radius:10px;text-align:center;font-weight:bold;margin-top:15px}
-.welcome{text-align:center;padding:20px 10px}
-.welcome .emoji{font-size:70px}
-.welcome h1{font-size:32px;line-height:1.2}
-.welcome p{color:#555;font-size:17px;line-height:1.5}
-.welcome .features{background:#fffbeb;padding:15px;border-radius:12px;text-align:left;margin-top:15px}
+body{font-family:Arial;background:#f8f9fa;margin:0;padding:16px;color:#222}
+.box{max-width:620px;margin:auto;background:white;padding:22px;border-radius:14px;box-shadow:0 4px 20px rgba(0,0,0,0.06)}
+h1{color:#111;text-align:center;margin:0;font-size:26px}
+p.sub{text-align:center;color:#666;font-size:14px}
+label{font-weight:700;display:block;margin-top:14px;font-size:14px}
+input,textarea,select{width:100%;padding:12px;margin-top:6px;border:1px solid #ddd;border-radius:8px;font-size:15px;box-sizing:border-box}
+button{width:100%;background:#111;color:white;border:none;padding:14px;border-radius:10px;font-size:16px;font-weight:bold;margin-top:16px;cursor:pointer}
+button.orange{background:#ea580c}
+button.green{background:#16a34a}
+button.grey{background:#eee;color:#333}
+.plan{border:1px solid #eee;border-radius:12px;padding:14px;margin-top:12px;display:flex;justify-content:space-between;align-items:center}
+.plan b{font-size:16px}.plan span{color:#666;font-size:13px}
+.plan button{width:auto;padding:10px 16px;margin:0}
+.badge{background:#eef2ff;padding:8px 12px;border-radius:20px;text-align:center;font-size:13px;font-weight:bold;margin-top:12px}
+.success{background:#dcfce7;border:1px solid #86efac;padding:14px;border-radius:10px;text-align:center;font-weight:bold;display:none;margin-top:14px}
+.small{font-size:13px;color:#666}
 </style>
 </head>
 <body>
 
-<div class="box" id="welcomeScreen">
-<div class="welcome">
-<div class="emoji">📧🎉</div>
-<h1>Welcome to<br>ShopMail!</h1>
-<p>Hello Shop Owner! 👋<br><br>Are you tired of sending messages one by one to your customers?<br><br><b>ShopMail will help you send your promo to ALL your customers at once — in 1 click!</b></p>
-<div class="features">
-✅ Send to 100s of customers at once<br>
-✅ Free for your first 100 emails a day<br>
-✅ Made for all business, by people from across the globe!
-</div>
-<p><b>Ready to grow your shop?</b></p>
-<button onclick="startApp()">Let's Start 🚀</button>
-<p style="font-size:13px;color:#999">Made with 💜 by Stupendous-meerkat</p>
-</div>
+<!-- SIGN IN -->
+<div class="box" id="authScreen">
+<h1>ShopMail</h1>
+<p class="sub">Send promos to all your customers at once</p>
+<label>Your Email</label>
+<input id="authEmail" placeholder="you@gmail.com">
+<label>Password</label>
+<input id="authPass" type="password" placeholder="Create a password">
+<button class="orange" onclick="signIn()">Sign In / Create Account</button>
+<p class="small" style="text-align:center">New users get <b>50 FREE mails</b> once. After that, subscribe to continue.</p>
 </div>
 
+<!-- WELCOME + PLANS -->
+<div class="box" id="welcomeScreen" style="display:none">
+<h1>Welcome to ShopMail 👋</h1>
+<p class="sub" id="welcomeUser"></p>
+<div class="badge" id="creditBadge"></div>
+
+<h3 style="margin-top:20px">Choose Your Plan</h3>
+<div class="plan"><div><b>Starter - FREE</b><br><span>50 mails, for new users only</span></div><button class="grey" onclick="selectPlan('Free',50)">Current</button></div>
+<div class="plan"><div><b>Daily Plan - ₦2,000</b><br><span>200 mails</span></div><button onclick="pay('Daily',2000,200)">Pay</button></div>
+<div class="plan"><div><b>Weekly Plan - ₦5,000</b><br><span>1,000 mails</span></div><button onclick="pay('Weekly',5000,1000)">Pay</button></div>
+<div class="plan"><div><b>Monthly Plan - ₦20,000</b><br><span>2,500 mails</span></div><button onclick="pay('Monthly',20000,2500)">Pay</button></div>
+<div class="plan"><div><b>Annual Plan - ₦100,000</b><br><span>Unlimited mails</span></div><button onclick="pay('Annual',100000,999999)">Pay</button></div>
+
+<button class="orange" onclick="startApp()">Continue to App →</button>
+<button class="grey" onclick="logout()">Log Out</button>
+</div>
+
+<!-- MAIN APP -->
 <div class="box" id="mainApp" style="display:none">
-<h1>📧 ShopMail</h1>
-<p class="sub">Send promos to all your customers at once!</p>
+<h1>ShopMail</h1>
+<p class="sub" id="mainUser"></p>
+<div class="badge" id="creditBadge2"></div>
 
 <label>Your Shop Name</label>
 <input id="shop" placeholder="e.g. Abigail's Fashion Hub">
-
-<label>Your Email for Replies 📩</label>
-<input id="replyEmail" placeholder="e.g. my-shop@gmail.com">
-<p style="font-size:13px;color:#666;margin:5px 0 0">When customers press Reply, it will go to this email!</p>
-
+<label>Your Email for Replies</label>
+<input id="replyEmail" placeholder="my-shop@gmail.com">
 <label>Promo Title</label>
-<input id="title" placeholder="e.g. New Shoes Just Arrived! 20% OFF Today!">
-
+<input id="title" placeholder="New Shoes Just Arrived! 20% OFF">
 <label>Your Message</label>
-<textarea id="msg" rows="4" placeholder="Hello my lovely customers! New stock has arrived... Come today!"></textarea>
+<textarea id="msg" rows="4" placeholder="Hello my lovely customers..."></textarea>
+<label>Customer Emails (one per line - max 1000)</label>
+<textarea id="emails" rows="6" placeholder="customer1@gmail.com&#10;customer2@gmail.com"></textarea>
+<div class="badge" id="count">👥 0 customers added</div>
 
-<label>Customer Emails (one per line)</label>
-<textarea id="emails" rows="5" placeholder="customer1@gmail.com
-customer2@gmail.com"></textarea>
-
-<div class="count" id="count">👥 0 customers added</div>
-
-<button onclick="preview()">👀 Preview My Promo</button>
-
-<div class="preview" id="preview" style="display:none">
-<h3 id="pTitle"></h3>
-<p><b>From:</b> <span id="pShop"></span></p>
-<p><b>Reply to:</b> <span id="pReply"></span></p>
-<p id="pMsg"></p>
+<button class="grey" onclick="preview()">👀 Preview</button>
+<div id="preview" style="display:none;background:#f8f9fa;padding:14px;border-radius:10px;margin-top:12px">
+<h3 id="pTitle"></h3><p id="pMsg"></p><p><b>From:</b> <span id="pShop"></span></p>
 </div>
 
-<button onclick="send()" style="background:#16a34a">🚀 SEND TO ALL CUSTOMERS</button>
+<button class="green" onclick="send()">🚀 SEND TO ALL CUSTOMERS</button>
+<div class="success" id="successBox">✅ Sent! Your customers will get it now.</div>
 <p id="result" style="text-align:center;font-weight:bold"></p>
-<button onclick="goBack()" style="background:#eee;color:#333">⬅ Back to Welcome</button>
+<button class="grey" onclick="goPlans()">⬅ Back to Plans</button>
 </div>
 
 <script>
+let user = JSON.parse(localStorage.getItem('shopmail_user') || 'null');
+let credits = parseInt(localStorage.getItem('shopmail_credits') || '0');
+let isNew = localStorage.getItem('shopmail_has_used_free') !== 'yes';
+
+if(user){ showWelcome(); }
+
+function signIn(){
+  let email = document.getElementById('authEmail').value.trim();
+  let pass = document.getElementById('authPass').value;
+  if(!email.includes('@') || pass.length < 4){ alert('Enter valid email and password (4+ chars)'); return; }
+  // If new user, give 50 free only once
+  if(localStorage.getItem('shopmail_has_used_free') !== 'yes'){
+    credits = 50;
+    localStorage.setItem('shopmail_has_used_free','yes');
+    localStorage.setItem('shopmail_credits','50');
+    alert('Welcome! You got 50 FREE mails 🎉');
+  }
+  user = {email: email};
+  localStorage.setItem('shopmail_user', JSON.stringify(user));
+  showWelcome();
+}
+function showWelcome(){
+  document.getElementById('authScreen').style.display='none';
+  document.getElementById('welcomeScreen').style.display='block';
+  document.getElementById('mainApp').style.display='none';
+  document.getElementById('welcomeUser').innerText = 'Logged in as ' + user.email;
+  updateBadge();
+}
+function updateBadge(){
+  let txt = credits >= 999999 ? '♾️ Unlimited mails left' : '💳 ' + credits + ' mails left';
+  document.getElementById('creditBadge').innerText = txt;
+  document.getElementById('creditBadge2').innerText = txt;
+  document.getElementById('mainUser').innerText = user.email;
+}
+function selectPlan(n,c){ alert(n+' plan selected'); }
+function pay(name, amount, mails){
+  // REPLACE THIS LINK WITH YOUR PAYSTACK PAYMENT LINK
+  let ok = confirm(name + ' Plan - ₦' + amount.toLocaleString() + ' for ' + mails + ' mails.\n\nClick OK to pay (Paystack). After payment, your mails will be added.');
+  if(ok){
+    // For now, demo: add credits immediately. After you connect Paystack, this will happen automatically after payment.
+    credits = credits + mails;
+    if(mails >= 999999) credits = 999999;
+    localStorage.setItem('shopmail_credits', credits);
+    updateBadge();
+    alert('Payment successful (Demo). ' + mails + ' mails added! ✅');
+  }
+}
 function startApp(){
+  if(credits <= 0){ alert('Your free 50 mails finished. Please subscribe to continue.'); return; }
   document.getElementById('welcomeScreen').style.display='none';
   document.getElementById('mainApp').style.display='block';
-  window.scrollTo(0,0);
+  updateBadge();
 }
-function goBack(){
-  document.getElementById('mainApp').style.display='none';
-  document.getElementById('welcomeScreen').style.display='block';
-  window.scrollTo(0,0);
-}
+function goPlans(){ showWelcome(); }
+function logout(){ localStorage.removeItem('shopmail_user'); location.reload(); }
+
 let emailsEl = document.getElementById('emails');
 emailsEl.addEventListener('input', function(){
   let list = emailsEl.value.split('\n').filter(e=>e.includes('@'));
+  if(list.length > 1000){ alert('Max is 1000 emails per send'); emailsEl.value = list.slice(0,1000).join('\n'); list = list.slice(0,1000); }
   document.getElementById('count').innerText = '👥 ' + list.length + ' customers added';
 });
 function preview(){
   document.getElementById('preview').style.display='block';
   document.getElementById('pShop').innerText = document.getElementById('shop').value || 'Your Shop';
-  document.getElementById('pReply').innerText = document.getElementById('replyEmail').value || 'Your email';
-  document.getElementById('pTitle').innerText = document.getElementById('title').value || 'Your Promo Title';
-  document.getElementById('pMsg').innerText = document.getElementById('msg').value || 'Your message will show here...';
+  document.getElementById('pTitle').innerText = document.getElementById('title').value || 'Your Promo';
+  document.getElementById('pMsg').innerText = document.getElementById('msg').value || 'Your message...';
 }
 async function send(){
   let list = emailsEl.value.split('\n').filter(e=>e.includes('@'));
-  if(list.length===0){ alert('Add at least 1 customer email first!'); return; }
+  if(list.length===0){ alert('Add at least 1 email'); return; }
+  if(list.length > credits){ alert('You have only ' + credits + ' mails left. Please subscribe for more.'); return; }
   let replyEmail = document.getElementById('replyEmail').value;
-  if(!replyEmail.includes('@')){ alert('Please add your email for replies first!'); return; }
-  let data = {
-    shop: document.getElementById('shop').value,
-    replyEmail: replyEmail,
-    title: document.getElementById('title').value,
-    message: document.getElementById('msg').value,
-    emails: list
-  };
-  document.getElementById('result').innerText = 'Sending... please wait... ⏳';
+  if(!replyEmail.includes('@')){ alert('Add your email for replies'); return; }
+
+  document.getElementById('result').innerText = 'Sending... please wait ⏳';
   try{
-    await fetch('/.netlify/functions/send', { method: 'POST', body: JSON.stringify(data) });
-    document.getElementById('result').innerText = '✅ SENT! Your promo went to ' + list.length + ' customers for real!';
-    alert('✅ SENT! Replies will go to ' + replyEmail);
-  } catch(e){
-    document.getElementById('result').innerText = '⚠️ Backend not connected yet.';
+    await fetch('/.netlify/functions/send', {method:'POST', body: JSON.stringify({shop:document.getElementById('shop').value, replyEmail, title:document.getElementById('title').value, message:document.getElementById('msg').value, emails:list})});
+  }catch(e){}
+  // Deduct credits + Notification
+  credits = credits - list.length;
+  if(credits < 0) credits = 0;
+  localStorage.setItem('shopmail_credits', credits);
+  updateBadge();
+  document.getElementById('result').innerText = '';
+  let box = document.getElementById('successBox');
+  box.style.display='block';
+  box.innerText = '✅ SUCCESS! Sent to ' + list.length + ' customers. You have ' + credits + ' mails left.';
+  // Phone notification
+  if('Notification' in window){
+    if(Notification.permission === 'granted'){ new Notification('ShopMail ✅', {body: 'Sent to ' + list.length + ' customers!'}); }
+    else { Notification.requestPermission(); }
   }
+  alert('✅ Sent to ' + list.length + ' customers! Notification sent.');
+  emailsEl.value = '';
 }
 </script>
 </body>
