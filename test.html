@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<h2>ShopMail TEST</h2>
+<input id="email" placeholder="Your Email">
+<button id="sendBtn" onclick="sendCode()">Send Code</button>
+<p id="debugText" style="color:blue"></p>
+<p id="authError" style="color:red"></p>
+<script>
+let supabase = window.supabase.createClient("https://kgsmotaqcxwkwqfijyof.supabase.co","sb_publishable_azXjTjW8oJFpNRri1ZmoFw_bglvYlkF");
+async function sendCode(){
+document.getElementById('debugText').innerText = "Button tapped!";
+let email = document.getElementById('email').value.trim();
+if(!email.includes('@')){document.getElementById('debugText').innerText="Button tapped but no @";return;}
+document.getElementById('debugText').innerText="Button tapped! Sending to "+email;
+let r = await supabase.auth.signInWithOtp({email:email,options:{shouldCreateUser:true}});
+if(r.error){document.getElementById('debugText').innerText="Supabase error: "+r.error.message;alert(r.error.message);}
+else{document.getElementById('debugText').innerText="Code sent! Check inbox + Spam";alert("Code sent to "+email);}
+}
+</script>
+</body>
+</html>
