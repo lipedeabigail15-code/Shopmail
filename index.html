@@ -10,6 +10,7 @@ body{font-family:sans-serif;background:#fff7ed;margin:0;padding:16px}
 input,textarea,button{width:100%;padding:12px;margin:6px 0;border-radius:8px;border:1px solid #ddd;box-sizing:border-box}
 button{background:#ea580c;color:#fff;font-weight:bold}
 .plan{border:2px solid #ea580c}
+.otp-input{font-size:28px;text-align:center;letter-spacing:8px;font-weight:bold}
 </style>
 </head>
 <body>
@@ -25,22 +26,24 @@ button{background:#ea580c;color:#fff;font-weight:bold}
     <input id="confirmPassword" type="password" placeholder="Confirm Password (for Sign Up only)">
     <label style="font-size:14px"><input type="checkbox" style="width:auto" onchange="document.getElementById('password').type=this.checked?'text':'password';document.getElementById('confirmPassword').type=this.checked?'text':'password';"> Show password</label>
     <input id="fullname" placeholder="Full Name (for signup)">
-    <button onclick="signup()">Sign Up</button>
-    <button onclick="login()" style="background:#fff;color:#000">Login</button>
+    <button id="signupBtn" onclick="signup()">Sign Up</button>
+    <button id="loginBtn" onclick="login()" style="background:#fff;color:#000">Login</button>
     <p id="authError" style="color:red;text-align:center"></p>
   </div>
 </div>
 
-<!-- VERIFY PAGE - SHOWS AFTER SIGN UP -->
-<div id="verifyPage" style="display:none">
-  <h2>📧 Check Your Email!</h2>
+<!-- OTP PAGE - 6 DIGIT CODE -->
+<div id="otpPage" style="display:none">
+  <h2>📧 Enter 6-Digit Code</h2>
   <div class="card" style="text-align:center">
-    <p style="font-size:50px">📩</p>
-    <h3>We sent you a confirmation link</h3>
-    <p>Go to <b id="verifyEmailText"></b> and click the link to confirm your email.</p>
-    <p>Then come back here and click Login.</p>
-    <button onclick="backToLogin()">⬅ Back to Login</button>
-    <button onclick="resendEmail()" style="background:#fff;color:#000;border:1px solid #ddd">Resend Confirmation Email</button>
+    <p style="font-size:50px">🔢</p>
+    <h3>We sent you a 6-digit code</h3>
+    <p>Go to <b id="otpEmailText"></b> and check your inbox (and Spam).<br>Enter the 6-digit code below:</p>
+    <input id="otpCode" class="otp-input" placeholder="123456" maxlength="6" inputmode="numeric">
+    <button id="verifyBtn" onclick="verifyOtpCode()">✅ Verify Code</button>
+    <button onclick="resendOtp()" style="background:#fff;color:#000;border:1px solid #ddd">Resend Code</button>
+    <button onclick="backToLogin()" style="background:#333">⬅ Back to Login</button>
+    <p id="otpError" style="color:red;text-align:center"></p>
   </div>
 </div>
 
@@ -69,112 +72,192 @@ button{background:#ea580c;color:#fff;font-weight:bold}
 <div id="paymentPage" style="display:none">
 <h2>💳 Buy More Mails</h2>
 <p>You used your 50 free mails. Pick a plan to continue sending:</p>
-
 <div class="card plan">
 <h3>100 Mails - ₦2,000</h3>
 <p>Good for small shops</p>
 <button onclick="pay(2000,'100 Mails')">Pay ₦2,000</button>
 </div>
-
 <div class="card plan">
 <h3>500 Mails - ₦5,000 ⭐ Most Popular</h3>
 <p>Best value for growing shops</p>
 <button onclick="pay(5000,'500 Mails')">Pay ₦5,000</button>
 </div>
-
 <div class="card plan">
 <h3>1,000 Mails - ₦8,000</h3>
 <p>For big promos</p>
 <button onclick="pay(8000,'1000 Mails')">Pay ₦8,000</button>
 </div>
-
 <button onclick="backToDashboard()" style="background:#333">⬅ Back to Dashboard</button>
 <p style="font-size:13px;color:#666;text-align:center">Payments are handled safely. A trusted adult needs to connect Paystack / Flutterwave to make real payments work.</p>
 </div>
 
 <script>
-const supabase = window.supabase.createClient(
-"https://kgsmotaqcxwkwqfijyof.supabase.co",
-"sb_publishable_azXjTjW8oJFpNRri1ZmoFw_bglvYlkF"
-);
+let supabase = null;
+try{
+  if(window.supabase && window.supabase.createClient){
+    supabase = window.supabase.createClient(
+      "https://kgsmotaqcxwkwqfijyof.supabase.co",
+      "sb_publishable_azXjTjW8oJFpNRri1ZmoFw_bglvYlkF"
+    );
+  }
+}catch(e){}
+
 let credits = 50;
+let pendingEmail = "";
 
 function showDashboard(email){
   document.getElementById('loginPage').style.display='none';
+  document.getElementById('otpPage').style.display='none';
   document.getElementById('dashboardPage').style.display='block';
   document.getElementById('paymentPage').style.display='none';
   if(email) document.getElementById('userInfo').innerText="Logged in: "+email;
 }
 function showLogin(){
   document.getElementById('loginPage').style.display='block';
+  document.getElementById('otpPage').style.display='none';
   document.getElementById('dashboardPage').style.display='none';
   document.getElementById('paymentPage').style.display='none';
 }
 function showPayment(){
   document.getElementById('loginPage').style.display='none';
+  document.getElementById('otpPage').style.display='none';
   document.getElementById('dashboardPage').style.display='none';
   document.getElementById('paymentPage').style.display='block';
 }
 function backToDashboard(){ showDashboard(); }
+function showOtpPage(email){
+  pendingEmail = email;
+  document.getElementById('loginPage').style.display='none';
+  document.getElementById('otpPage').style.display='block';
+  document.getElementById('otpEmailText').innerText = email;
+  document.getElementById('otpCode').value = "";
+  document.getElementById('otpError').innerText = "";
+}
 
 document.getElementById('emails').addEventListener('input', e=>{
   let list = e.target.value.split('\n').filter(x=>x.includes('@'));
   document.getElementById('count').innerText = '👥 ' + list.length + ' customers';
 });
 
-function togglePass(){
-  let show = document.getElementById('showPass').checked;
-  document.getElementById('password').type = show ? 'text' : 'password';
-  document.getElementById('confirmPassword').type = show ? 'text' : 'password';
-}
 function backToLogin(){
-  document.getElementById('verifyPage').style.display='none';
+  document.getElementById('otpPage').style.display='none';
   document.getElementById('loginPage').style.display='block';
 }
 async function signup(){
-  const email=document.getElementById('email').value;
+  const btn = document.getElementById('signupBtn');
+  const errEl = document.getElementById('authError');
+  errEl.innerText = '';
+  if(!supabase){ errEl.innerText="Supabase did not load. Check internet, close tab and open again."; alert("Supabase did not load. Please check your internet."); return; }
+  const email=document.getElementById('email').value.trim();
   const password=document.getElementById('password').value;
   const confirm=document.getElementById('confirmPassword').value;
   const full_name=document.getElementById('fullname').value;
-  if(password !== confirm) return alert("Passwords do not match!");
-  if(password.length < 6) return alert("Password must be at least 6 characters");
-  const {data,error}=await supabase.auth.signUp({email,password});
-  if(error){ document.getElementById('authError').innerText = error.message; return alert(error.message); }
-  if(data.user){
-    await supabase.from('profiles').insert([{id:data.user.id,email,full_name}]);
+  if(!email.includes('@')){ errEl.innerText="Please enter a valid email"; return; }
+  if(password !== confirm){ errEl.innerText="Passwords do not match!"; alert("Passwords do not match!"); return; }
+  if(password.length < 6){ errEl.innerText="Password must be at least 6 characters"; alert("Password must be at least 6 characters"); return; }
+  btn.innerText = "Sending 6-digit code...";
+  btn.disabled = true;
+  try{
+    const {data,error}=await supabase.auth.signUp({email,password});
+    if(error){
+      errEl.innerText = error.message;
+      alert(error.message);
+      btn.innerText = "Sign Up";
+      btn.disabled = false;
+      return;
+    }
+    if(data.user){
+      try{ await supabase.from('profiles').insert([{id:data.user.id,email,full_name}]); }catch(e){}
+    }
+    // If user already verified, go straight to dashboard
+    if(data.session){
+      showDashboard(email);
+    } else {
+      // Show OTP page - code was sent to email
+      showOtpPage(email);
+      alert("We sent a 6-digit code to " + email + ". Check your inbox and Spam!");
+    }
+  }catch(e){
+    errEl.innerText = "Something went wrong: " + e.message;
+    alert("Something went wrong: " + e.message);
   }
-  document.getElementById('loginPage').style.display='none';
-  document.getElementById('verifyPage').style.display='block';
-  document.getElementById('verifyEmailText').innerText = email;
+  btn.innerText = "Sign Up";
+  btn.disabled = false;
+}
+async function verifyOtpCode(){
+  const code = document.getElementById('otpCode').value.trim();
+  const errEl = document.getElementById('otpError');
+  errEl.innerText = "";
+  if(code.length !== 6){ errEl.innerText="Please enter the 6-digit code"; return; }
+  if(!supabase){ errEl.innerText="Supabase did not load."; return; }
+  const btn = document.getElementById('verifyBtn');
+  btn.innerText = "Verifying...";
+  btn.disabled = true;
+  try{
+    // Try signup type first, then email type
+    let result = await supabase.auth.verifyOtp({email: pendingEmail, token: code, type: 'signup'});
+    if(result.error){
+      result = await supabase.auth.verifyOtp({email: pendingEmail, token: code, type: 'email'});
+    }
+    if(result.error){
+      errEl.innerText = result.error.message;
+      alert(result.error.message);
+    } else {
+      alert("✅ Code correct! Welcome!");
+      showDashboard(pendingEmail);
+      loadHistory();
+    }
+  }catch(e){
+    errEl.innerText = e.message;
+    alert(e.message);
+  }
+  btn.innerText = "✅ Verify Code";
+  btn.disabled = false;
+}
+async function resendOtp(){
+  if(!pendingEmail) pendingEmail = document.getElementById('email').value.trim();
+  if(!supabase){ alert("Supabase did not load."); return; }
+  const {error}=await supabase.auth.resend({type:'signup', email: pendingEmail});
+  if(error) alert(error.message);
+  else alert("New 6-digit code sent to "+pendingEmail+"! Check inbox and Spam.");
 }
 async function login(){
-  const email=document.getElementById('email').value;
+  const errEl = document.getElementById('authError');
+  errEl.innerText = '';
+  if(!supabase){ errEl.innerText="Supabase did not load. Check internet."; alert("Supabase did not load."); return; }
+  const email=document.getElementById('email').value.trim();
   const password=document.getElementById('password').value;
-  const {data,error}=await supabase.auth.signInWithPassword({email,password});
-  if(error){
-    if(error.message.toLowerCase().includes('confirm')){
-      alert("Please confirm your email first! Check your inbox.");
-      document.getElementById('loginPage').style.display='none';
-      document.getElementById('verifyPage').style.display='block';
-      document.getElementById('verifyEmailText').innerText = email;
-    } else {
-      document.getElementById('authError').innerText = error.message;
-      alert(error.message);
+  if(!email.includes('@')){ errEl.innerText="Please enter a valid email"; return; }
+  const btn = document.getElementById('loginBtn');
+  btn.innerText = "Logging in...";
+  try{
+    const {data,error}=await supabase.auth.signInWithPassword({email,password});
+    if(error){
+      if(error.message.toLowerCase().includes('confirm') || error.message.toLowerCase().includes('not confirmed') || error.message.toLowerCase().includes('verify')){
+        alert("Your email is not confirmed yet. We will send you a new 6-digit code.");
+        await supabase.auth.resend({type:'signup', email: email});
+        showOtpPage(email);
+      } else {
+        errEl.innerText = error.message;
+        alert(error.message);
+      }
+      btn.innerText = "Login";
+      return;
     }
-    return;
+    showDashboard(email); loadHistory();
+  }catch(e){
+    errEl.innerText = e.message;
+    alert(e.message);
   }
-  showDashboard(email); loadHistory();
+  btn.innerText = "Login";
 }
-async function resendEmail(){
-  const email=document.getElementById('email').value;
-  const {error}=await supabase.auth.resend({type:'signup', email:email});
-  if(error) alert(error.message);
-  else alert("Confirmation email resent to "+email);
-}
-async function logout(){ await supabase.auth.signOut(); showLogin(); }
+async function logout(){ if(supabase) await supabase.auth.signOut(); showLogin(); }
 async function checkUser(){
-  const {data}=await supabase.auth.getUser();
-  if(data.user){ showDashboard(data.user.email); loadHistory(); }
+  if(!supabase) return;
+  try{
+    const {data}=await supabase.auth.getUser();
+    if(data.user){ showDashboard(data.user.email); loadHistory(); }
+  }catch(e){}
 }
 async function sendPromo(){
   const {data:{user}}=await supabase.auth.getUser();
@@ -196,6 +279,7 @@ function pay(amount, planName){
   alert("You picked: "+planName+" for ₦"+amount+"\n\nTo make this REAL payment work, a trusted adult needs to connect your Paystack account. For now this is a demo button.");
 }
 async function loadHistory(){
+  if(!supabase) return;
   const {data}=await supabase.from('campaigns').select('*').order('created_at',{ascending:false});
   document.getElementById('history').innerHTML="<h3>Your Past Promos</h3>"+(data||[]).map(c=>`<div class="card"><b>${c.title}</b><br>${c.emails_count} mails - ${c.shop_name}</div>`).join('');
 }
@@ -203,4 +287,3 @@ checkUser();
 </script>
 </body>
 </html>
-  
