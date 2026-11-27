@@ -23,7 +23,7 @@ button{background:#ea580c;color:#fff;font-weight:bold}
     <input id="email" placeholder="Email">
     <input id="password" type="password" placeholder="Password">
     <input id="confirmPassword" type="password" placeholder="Confirm Password (for Sign Up only)">
-    <label style="font-size:14px"><<label style="font-size:14px"><input type="checkbox" style="width:auto" onchange="document.getElementById('password').type=this.checked?'text':'password';document.getElementById('confirmPassword').type=this.checked?'text':'password';"> Show password</label> style="width:auto"> Show password</label>
+    <label style="font-size:14px"><input type="checkbox" id="showPass" style="width:auto" onchange="togglePass()"> Show password</label>
     <input id="fullname" placeholder="Full Name (for signup)">
     <button onclick="signup()">Sign Up</button>
     <button onclick="login()" style="background:#fff;color:#000">Login</button>
@@ -203,3 +203,4 @@ checkUser();
 </script>
 </body>
 </html>
+
