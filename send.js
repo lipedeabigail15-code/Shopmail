@@ -17,7 +17,7 @@ exports.handler = async (event) => {
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({
-        from: (shop || 'ShopMail') + ' <hello@shopmailapp.com.ng>',
+        from: 'ShopMail <onboarding@resend.dev>',
         to: emails.map(e => e.trim()),
         reply_to: replyEmail,
         subject: title || 'New Promo From Your Shop',
