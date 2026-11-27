@@ -25,6 +25,7 @@
 </div>
 <div id="history"></div>
 </div> 
+  <script>
   async function checkUser(){
 let client = window.supabase.createClient("https://kgsmotaqcxwkwqfijyof.supabase.co","sb_publishable_azXjTjW8oJFpNRri1ZmoFw_bglvYlkF");
 let r = await client.auth.getUser();
@@ -58,7 +59,6 @@ let l=e.target.value.split('\n').filter(x=>x.includes('@'));
 document.getElementById('count').innerText='👥 '+l.length+' customers';
 });
 checkUser();
-<script>
 async function sendCode(){
 document.getElementById('debugText').innerText = "Button tapped!";
 let email = document.getElementById('email').value.trim();
