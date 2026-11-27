@@ -10,7 +10,6 @@ body{font-family:sans-serif;background:#fff7ed;margin:0;padding:16px}
 input,textarea,button{width:100%;padding:12px;margin:6px 0;border-radius:8px;border:1px solid #ddd;box-sizing:border-box}
 button{background:#ea580c;color:#fff;font-weight:bold}
 .plan{border:2px solid #ea580c}
-.otp-input{font-size:28px;text-align:center;letter-spacing:8px;font-weight:bold}
 </style>
 </head>
 <body>
@@ -19,28 +18,14 @@ button{background:#ea580c;color:#fff;font-weight:bold}
   <h2>📧 ShopMail</h2>
   <p>Send promos to all your customers at once!</p>
   <div class="card">
-    <h3>Login / Sign Up with Code</h3>
-    <p style="font-size:14px;color:#666">No password needed. We will send you a 6-digit code.</p>
+    <h3>Login with Magic Link</h3>
+    <p style="font-size:14px;color:#666">No password. We will send you a login link.</p>
     <input id="email" placeholder="Your Email e.g. you@gmail.com">
     <input id="fullname" placeholder="Full Name (for first time only)">
-    <button id="sendBtn" onclick="sendCode()">📩 Send 6-Digit Code</button>
+    <button id="sendBtn" onclick="sendLink()">📩 Send Login Link</button>
     <p id="authError" style="color:red;text-align:center"></p>
     <p id="debugText" style="color:blue;text-align:center;font-size:13px"></p>
-    <p style="font-size:13px;text-align:center;color:#666">New user? Just enter your email and tap Send Code. We will create your account.</p>
-  </div>
-</div>
-
-<div id="otpPage" style="display:none">
-  <h2>📧 Enter 6-Digit Code</h2>
-  <div class="card" style="text-align:center">
-    <p style="font-size:50px">🔢</p>
-    <h3>We sent you a 6-digit code</h3>
-    <p>Go to <b id="otpEmailText"></b> and check your inbox <b>and Spam</b>.<br>Look for the 6 numbers in the email and enter them below:</p>
-    <input id="otpCode" class="otp-input" placeholder="123456" maxlength="6" inputmode="numeric">
-    <button id="verifyBtn" onclick="verifyOtpCode()">✅ Verify Code</button>
-    <button onclick="resendOtp()" style="background:#fff;color:#000;border:1px solid #ddd">Resend Code</button>
-    <button onclick="backToLogin()" style="background:#333">⬅ Back / Change Email</button>
-    <p id="otpError" style="color:red;text-align:center"></p>
+    <p style="font-size:13px;text-align:center;color:#666">Tap the link in your email to login. Check Inbox and Spam.</p>
   </div>
 </div>
 
@@ -67,161 +52,72 @@ button{background:#ea580c;color:#fff;font-weight:bold}
 <div id="paymentPage" style="display:none">
 <h2>💳 Buy More Mails</h2>
 <p>You used your 50 free mails. Pick a plan to continue sending:</p>
-<div class="card plan">
-<h3>100 Mails - ₦2,000</h3>
-<p>Good for small shops</p>
-<button onclick="pay(2000,'100 Mails')">Pay ₦2,000</button>
-</div>
-<div class="card plan">
-<h3>500 Mails - ₦5,000 ⭐ Most Popular</h3>
-<p>Best value for growing shops</p>
-<button onclick="pay(5000,'500 Mails')">Pay ₦5,000</button>
-</div>
-<div class="card plan">
-<h3>1,000 Mails - ₦8,000</h3>
-<p>For big promos</p>
-<button onclick="pay(8000,'1000 Mails')">Pay ₦8,000</button>
-</div>
+<div class="card plan"><h3>100 Mails - ₦2,000</h3><button onclick="pay(2000,'100 Mails')">Pay ₦2,000</button></div>
+<div class="card plan"><h3>500 Mails - ₦5,000 ⭐ Most Popular</h3><button onclick="pay(5000,'500 Mails')">Pay ₦5,000</button></div>
+<div class="card plan"><h3>1,000 Mails - ₦8,000</h3><button onclick="pay(8000,'1000 Mails')">Pay ₦8,000</button></div>
 <button onclick="backToDashboard()" style="background:#333">⬅ Back to Dashboard</button>
-<p style="font-size:13px;color:#666;text-align:center">Payments are handled safely. A trusted adult needs to connect Paystack / Flutterwave to make real payments work.</p>
 </div>
 
 <script>
 let supabase = null;
 try{
   if(window.supabase && window.supabase.createClient){
-    supabase = window.supabase.createClient(
-      "https://kgsmotaqcxwkwqfijyof.supabase.co",
-      "sb_publishable_azXjTjW8oJFpNRri1ZmoFw_bglvYlkF"
-    );
+    supabase = window.supabase.createClient("https://kgsmotaqcxwkwqfijyof.supabase.co","sb_publishable_azXjTjW8oJFpNRri1ZmoFw_bglvYlkF");
   }
 }catch(e){}
-
 let credits = 50;
-let pendingEmail = "";
 let pendingName = "";
-
 function showDashboard(email){
   document.getElementById('loginPage').style.display='none';
-  document.getElementById('otpPage').style.display='none';
   document.getElementById('dashboardPage').style.display='block';
   document.getElementById('paymentPage').style.display='none';
   if(email) document.getElementById('userInfo').innerText="Logged in: "+email;
 }
 function showLogin(){
   document.getElementById('loginPage').style.display='block';
-  document.getElementById('otpPage').style.display='none';
   document.getElementById('dashboardPage').style.display='none';
   document.getElementById('paymentPage').style.display='none';
 }
 function showPayment(){
   document.getElementById('loginPage').style.display='none';
-  document.getElementById('otpPage').style.display='none';
   document.getElementById('dashboardPage').style.display='none';
   document.getElementById('paymentPage').style.display='block';
 }
 function backToDashboard(){ showDashboard(); }
-function showOtpPage(email){
-  pendingEmail = email;
-  document.getElementById('loginPage').style.display='none';
-  document.getElementById('otpPage').style.display='block';
-  document.getElementById('otpEmailText').innerText = email;
-  document.getElementById('otpCode').value = "";
-  document.getElementById('otpError').innerText = "";
-}
 document.getElementById('emails').addEventListener('input', e=>{
   let list = e.target.value.split('\n').filter(x=>x.includes('@'));
   document.getElementById('count').innerText = '👥 ' + list.length + ' customers';
 });
-function backToLogin(){
-  document.getElementById('otpPage').style.display='none';
-  document.getElementById('loginPage').style.display='block';
-}
-async function sendCode(){
-  document.getElementById('debugText').innerText = "Button tapped! Trying to send code...";
+async function sendLink(){
+  document.getElementById('debugText').innerText = "Button tapped! Sending link...";
   const btn = document.getElementById('sendBtn');
   const errEl = document.getElementById('authError');
   errEl.innerText = '';
   const email = document.getElementById('email').value.trim();
   pendingName = document.getElementById('fullname').value.trim();
-  document.getElementById('debugText').innerText = "Button tapped! Email typed: " + email;
-  if(!email.includes('@')){
-    errEl.innerText="Please enter a valid email";
-    document.getElementById('debugText').innerText = "Button works, but email is missing @";
-    return;
-  }
-  if(!supabase){
-    errEl.innerText="Supabase did not load. Check internet, close tab and open again.";
-    document.getElementById('debugText').innerText = "Button works, but Supabase did NOT load. Check internet.";
-    alert("Supabase did not load. Please check your internet, close tab and open again.");
-    return;
-  }
-  btn.innerText = "Sending code... please wait...";
-  btn.disabled = true;
-  document.getElementById('debugText').innerText = "Sending to Supabase...";
-  try{
-    const {data, error} = await supabase.auth.signInWithOtp({email: email, options: { shouldCreateUser: true }});
-    if(error){
-      errEl.innerText = error.message;
-      document.getElementById('debugText').innerText = "Supabase error: " + error.message;
-      alert("Supabase says: " + error.message);
-    } else {
-      document.getElementById('debugText').innerText = "Code sent!";
-      showOtpPage(email);
-      alert("We sent a 6-digit code to " + email + ". Check your inbox and Spam! Look for the 6 numbers in the email.");
-    }
-  }catch(e){
-    errEl.innerText = "Something went wrong: " + e.message;
-    document.getElementById('debugText').innerText = "Error: " + e.message;
-    alert("Something went wrong: " + e.message);
-  }
-  btn.innerText = "📩 Send 6-Digit Code";
-  btn.disabled = false;
-}
-async function verifyOtpCode(){
-  const code = document.getElementById('otpCode').value.trim();
-  const errEl = document.getElementById('otpError');
-  errEl.innerText = "";
-  if(code.length !== 6){ errEl.innerText="Please enter the 6-digit code"; return; }
-  if(!supabase){ errEl.innerText="Supabase did not load."; return; }
-  const btn = document.getElementById('verifyBtn');
-  btn.innerText = "Verifying...";
+  if(!email.includes('@')){ errEl.innerText="Please enter a valid email"; return; }
+  if(!supabase){ errEl.innerText="Supabase did not load. Check internet."; return; }
+  btn.innerText = "Sending link... please wait...";
   btn.disabled = true;
   try{
-    const {data, error} = await supabase.auth.verifyOtp({email: pendingEmail, token: code, type: 'email'});
-    if(error){
-      errEl.innerText = error.message;
-      alert(error.message);
-    } else {
-      try{
-        if(data.user && pendingName){
-          await supabase.from('profiles').insert([{id:data.user.id, email:pendingEmail, full_name:pendingName}]);
-        }
-      }catch(e){}
-      alert("✅ Code correct! Welcome!");
-      showDashboard(pendingEmail);
-      loadHistory();
-    }
-  }catch(e){
-    errEl.innerText = e.message;
-    alert(e.message);
-  }
-  btn.innerText = "✅ Verify Code";
+    const {error} = await supabase.auth.signInWithOtp({email: email, options: { shouldCreateUser: true, emailRedirectTo: "https://lipedeabigail15-code.github.io/Shopmail/" }});
+    if(error){ errEl.innerText = error.message; document.getElementById('debugText').innerText = "Supabase error: " + error.message; alert(error.message); }
+    else { document.getElementById('debugText').innerText = "Link sent! Check inbox + Spam and tap the link."; alert("We sent a login link to " + email + ". Open Gmail and TAP the link to login."); }
+  }catch(e){ errEl.innerText = e.message; alert(e.message); }
+  btn.innerText = "📩 Send Login Link";
   btn.disabled = false;
-}
-async function resendOtp(){
-  if(!pendingEmail) pendingEmail = document.getElementById('email').value.trim();
-  if(!supabase){ alert("Supabase did not load."); return; }
-  const {error} = await supabase.auth.signInWithOtp({email: pendingEmail, options:{shouldCreateUser:true}});
-  if(error) alert(error.message);
-  else alert("New 6-digit code sent to "+pendingEmail+"! Check inbox and Spam.");
 }
 async function logout(){ if(supabase) await supabase.auth.signOut(); showLogin(); }
 async function checkUser(){
   if(!supabase) return;
   try{
     const {data}=await supabase.auth.getUser();
-    if(data.user){ showDashboard(data.user.email); loadHistory(); }
+    if(data.user){
+      if(pendingName || document.getElementById('fullname').value.trim()){
+        try{ await supabase.from('profiles').insert([{id:data.user.id, email:data.user.email, full_name:pendingName||document.getElementById('fullname').value.trim()}]); }catch(e){}
+      }
+      showDashboard(data.user.email); loadHistory();
+    }
   }catch(e){}
 }
 async function sendPromo(){
@@ -229,20 +125,14 @@ async function sendPromo(){
   if(!user) return alert("Login first");
   let list=document.getElementById('emails').value.split('\n').filter(x=>x.includes('@'));
   if(list.length===0) return alert("Add at least 1 email");
-  if(list.length > credits){
-    alert("You only have "+credits+" free mails left.");
-    showPayment();
-    return;
-  }
+  if(list.length > credits){ alert("You only have "+credits+" free mails left."); showPayment(); return; }
   credits -= list.length;
   document.getElementById('credits').innerText="💌 Credits left: "+credits+" free";
   await supabase.from('campaigns').insert([{user_id:user.id,shop_name:document.getElementById('shop').value,title:document.getElementById('title').value,message:document.getElementById('msg').value,emails_count:list.length}]);
   alert("✅ Sent to "+list.length+" customers!");
   loadHistory();
 }
-function pay(amount, planName){
-  alert("You picked: "+planName+" for ₦"+amount+"\n\nTo make this REAL payment work, a trusted adult needs to connect your Paystack account. For now this is a demo button.");
-}
+function pay(amount, planName){ alert("You picked: "+planName+" for ₦"+amount+"\n\nTo make this REAL payment work, a trusted adult needs to connect your Paystack account."); }
 async function loadHistory(){
   if(!supabase) return;
   const {data}=await supabase.from('campaigns').select('*').order('created_at',{ascending:false});
