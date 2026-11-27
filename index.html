@@ -2,143 +2,76 @@
 <html>
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>ShopMail</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-body{font-family:sans-serif;background:#fff7ed;margin:0;padding:16px}
-.card{background:#fff;padding:16px;border-radius:12px;margin-bottom:12px}
-input,textarea,button{width:100%;padding:12px;margin:6px 0;border-radius:8px;border:1px solid #ddd;box-sizing:border-box}
-button{background:#ea580c;color:#fff;font-weight:bold}
-.plan{border:2px solid #ea580c}
-</style>
 </head>
 <body>
-
-<div id="loginPage">
-  <h2>📧 ShopMail</h2>
-  <p>Send promos to all your customers at once!</p>
-  <div class="card">
-    <h3>Login with Magic Link</h3>
-    <p style="font-size:14px;color:#666">No password. We will send you a login link.</p>
-    <input id="email" placeholder="Your Email e.g. you@gmail.com">
-    <input id="fullname" placeholder="Full Name (for first time only)">
-    <button id="sendBtn" onclick="sendLink()">📩 Send Login Link</button>
-    <p id="authError" style="color:red;text-align:center"></p>
-    <p id="debugText" style="color:blue;text-align:center;font-size:13px"></p>
-    <p style="font-size:13px;text-align:center;color:#666">Tap the link in your email to login. Check Inbox and Spam.</p>
-  </div>
-</div>
-
-<div id="dashboardPage" style="display:none">
-<h2>📧 ShopMail</h2>
+<h2>ShopMail TEST</h2>
+<input id="email" placeholder="Your Email">
+<button onclick="sendCode()">Send Link</button>
+<p id="debugText" style="color:blue"></p
+ <div id="dashboardPage" style="display:none">
+<h2>📧 ShopMail Dashboard</h2>
 <p id="userInfo"></p>
-<p id="credits">💌 Credits left: 50 free</p>
-<button onclick="logout()" style="background:#333">Logout</button>
-<div class="card">
+<p>💌 Credits left: 50 free</p>
+<button onclick="logout()">Logout</button>
+<div style="background:#fff;padding:16px;border-radius:12px">
 <h3>Send Promo</h3>
 <input id="shop" placeholder="Your Shop Name">
-<input id="replyEmail" placeholder="Your Email for Replies">
-<input id="title" placeholder="Promo Title e.g. 20% OFF Today!">
-<textarea id="msg" rows="4" placeholder="Your message..."></textarea>
-<label>Customer Emails (one per line)</label>
-<textarea id="emails" rows="5" placeholder="customer1@gmail.com"></textarea>
+<input id="title" placeholder="Promo Title e.g. 20% OFF">
+<textarea id="msg" rows="3" placeholder="Your message..."></textarea>
+<textarea id="emails" rows="4" placeholder="customer1@gmail.com"></textarea>
 <p id="count">👥 0 customers</p>
 <button onclick="sendPromo()">🚀 SEND TO ALL</button>
-<button onclick="showPayment()" style="background:#16a34a">💳 Buy More Mails After 50 Free</button>
 </div>
 <div id="history"></div>
-</div>
-
-<div id="paymentPage" style="display:none">
-<h2>💳 Buy More Mails</h2>
-<p>You used your 50 free mails. Pick a plan to continue sending:</p>
-<div class="card plan"><h3>100 Mails - ₦2,000</h3><button onclick="pay(2000,'100 Mails')">Pay ₦2,000</button></div>
-<div class="card plan"><h3>500 Mails - ₦5,000 ⭐ Most Popular</h3><button onclick="pay(5000,'500 Mails')">Pay ₦5,000</button></div>
-<div class="card plan"><h3>1,000 Mails - ₦8,000</h3><button onclick="pay(8000,'1000 Mails')">Pay ₦8,000</button></div>
-<button onclick="backToDashboard()" style="background:#333">⬅ Back to Dashboard</button>
-</div>
-
-<script>
-let supabase = null;
-try{
-  if(window.supabase && window.supabase.createClient){
-    supabase = window.supabase.createClient("https://kgsmotaqcxwkwqfijyof.supabase.co","sb_publishable_azXjTjW8oJFpNRri1ZmoFw_bglvYlkF");
-  }
-}catch(e){}
-let credits = 50;
-let pendingName = "";
-function showDashboard(email){
-  document.getElementById('loginPage').style.display='none';
-  document.getElementById('dashboardPage').style.display='block';
-  document.getElementById('paymentPage').style.display='none';
-  if(email) document.getElementById('userInfo').innerText="Logged in: "+email;
+</div> 
+  async function checkUser(){
+let client = window.supabase.createClient("https://kgsmotaqcxwkwqfijyof.supabase.co","sb_publishable_azXjTjW8oJFpNRri1ZmoFw_bglvYlkF");
+let r = await client.auth.getUser();
+if(r.data.user){
+document.getElementById('dashboardPage').style.display='block';
+document.getElementById('userInfo').innerText="Logged in: "+r.data.user.email;
+loadHistory(client, r.data.user.id);
 }
-function showLogin(){
-  document.getElementById('loginPage').style.display='block';
-  document.getElementById('dashboardPage').style.display='none';
-  document.getElementById('paymentPage').style.display='none';
 }
-function showPayment(){
-  document.getElementById('loginPage').style.display='none';
-  document.getElementById('dashboardPage').style.display='none';
-  document.getElementById('paymentPage').style.display='block';
-}
-function backToDashboard(){ showDashboard(); }
-document.getElementById('emails').addEventListener('input', e=>{
-  let list = e.target.value.split('\n').filter(x=>x.includes('@'));
-  document.getElementById('count').innerText = '👥 ' + list.length + ' customers';
-});
-async function sendLink(){
-  document.getElementById('debugText').innerText = "Button tapped! Sending link...";
-  const btn = document.getElementById('sendBtn');
-  const errEl = document.getElementById('authError');
-  errEl.innerText = '';
-  const email = document.getElementById('email').value.trim();
-  pendingName = document.getElementById('fullname').value.trim();
-  if(!email.includes('@')){ errEl.innerText="Please enter a valid email"; return; }
-  if(!supabase){ errEl.innerText="Supabase did not load. Check internet."; return; }
-  btn.innerText = "Sending link... please wait...";
-  btn.disabled = true;
-  try{
-    const {error} = await supabase.auth.signInWithOtp({email: email, options: { shouldCreateUser: true, emailRedirectTo: "https://lipedeabigail15-code.github.io/Shopmail/" }});
-    if(error){ errEl.innerText = error.message; document.getElementById('debugText').innerText = "Supabase error: " + error.message; alert(error.message); }
-    else { document.getElementById('debugText').innerText = "Link sent! Check inbox + Spam and tap the link."; alert("We sent a login link to " + email + ". Open Gmail and TAP the link to login."); }
-  }catch(e){ errEl.innerText = e.message; alert(e.message); }
-  btn.innerText = "📩 Send Login Link";
-  btn.disabled = false;
-}
-async function logout(){ if(supabase) await supabase.auth.signOut(); showLogin(); }
-async function checkUser(){
-  if(!supabase) return;
-  try{
-    const {data}=await supabase.auth.getUser();
-    if(data.user){
-      if(pendingName || document.getElementById('fullname').value.trim()){
-        try{ await supabase.from('profiles').insert([{id:data.user.id, email:data.user.email, full_name:pendingName||document.getElementById('fullname').value.trim()}]); }catch(e){}
-      }
-      showDashboard(data.user.email); loadHistory();
-    }
-  }catch(e){}
+async function logout(){
+let client = window.supabase.createClient("https://kgsmotaqcxwkwqfijyof.supabase.co","sb_publishable_azXjTjW8oJFpNRri1ZmoFw_bglvYlkF");
+await client.auth.signOut();
+location.reload();
 }
 async function sendPromo(){
-  const {data:{user}}=await supabase.auth.getUser();
-  if(!user) return alert("Login first");
-  let list=document.getElementById('emails').value.split('\n').filter(x=>x.includes('@'));
-  if(list.length===0) return alert("Add at least 1 email");
-  if(list.length > credits){ alert("You only have "+credits+" free mails left."); showPayment(); return; }
-  credits -= list.length;
-  document.getElementById('credits').innerText="💌 Credits left: "+credits+" free";
-  await supabase.from('campaigns').insert([{user_id:user.id,shop_name:document.getElementById('shop').value,title:document.getElementById('title').value,message:document.getElementById('msg').value,emails_count:list.length}]);
-  alert("✅ Sent to "+list.length+" customers!");
-  loadHistory();
+let client = window.supabase.createClient("https://kgsmotaqcxwkwqfijyof.supabase.co","sb_publishable_azXjTjW8oJFpNRri1ZmoFw_bglvYlkF");
+let u = await client.auth.getUser();
+if(!u.data.user){alert("Login first");return;}
+let list=document.getElementById('emails').value.split('\n').filter(x=>x.includes('@'));
+if(list.length==0){alert("Add at least 1 email");return;}
+await client.from('campaigns').insert([{user_id:u.data.user.id,shop_name:document.getElementById('shop').value,title:document.getElementById('title').value,message:document.getElementById('msg').value,emails_count:list.length}]);
+alert("Sent to "+list.length+" customers!");
+loadHistory(client, u.data.user.id);
 }
-function pay(amount, planName){ alert("You picked: "+planName+" for ₦"+amount+"\n\nTo make this REAL payment work, a trusted adult needs to connect your Paystack account."); }
-async function loadHistory(){
-  if(!supabase) return;
-  const {data}=await supabase.from('campaigns').select('*').order('created_at',{ascending:false});
-  document.getElementById('history').innerHTML="<h3>Your Past Promos</h3>"+(data||[]).map(c=>`<div class="card"><b>${c.title}</b><br>${c.emails_count} mails - ${c.shop_name}</div>`).join('');
+async function loadHistory(client, uid){
+let d = await client.from('campaigns').select('*').order('created_at',{ascending:false});
+document.getElementById('history').innerHTML="<h3>Past Promos</h3>"+(d.data||[]).map(c=>"<div><b>"+c.title+"</b> - "+c.emails_count+" mails</div>").join('');
 }
+document.getElementById('emails').addEventListener('input', e=>{
+let l=e.target.value.split('\n').filter(x=>x.includes('@'));
+document.getElementById('count').innerText='👥 '+l.length+' customers';
+});
 checkUser();
+<script>
+async function sendCode(){
+document.getElementById('debugText').innerText = "Button tapped!";
+let email = document.getElementById('email').value.trim();
+if(!email.includes('@')){document.getElementById('debugText').innerText="Button tapped but no @";return;}
+if(!window.supabase){document.getElementById('debugText').innerText="Supabase did NOT load";return;}
+try{
+let client = window.supabase.createClient("https://kgsmotaqcxwkwqfijyof.supabase.co","sb_publishable_azXjTjW8oJFpNRri1ZmoFw_bglvYlkF");
+document.getElementById('debugText').innerText="Button tapped! Sending to "+email;
+let r = await client.auth.signInWithOtp({email:email,options:{shouldCreateUser:true,emailRedirectTo:"https://lipedeabigail15-code.github.io/Shopmail/"}});
+if(r.error){document.getElementById('debugText').innerText="Supabase error: "+r.error.message;}
+else{document.getElementById('debugText').innerText="Link sent! Check inbox + Spam";alert("Link sent to "+email);}
+}catch(e){document.getElementById('debugText').innerText="Error: "+e.message;}
+}
 </script>
 </body>
 </html>
