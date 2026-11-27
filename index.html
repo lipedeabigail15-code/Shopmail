@@ -15,20 +15,18 @@ button{background:#ea580c;color:#fff;font-weight:bold}
 </head>
 <body>
 
-<!-- PAGE 1: LOGIN -->
+<!-- PAGE 1: LOGIN WITH OTP ONLY - NO PASSWORD -->
 <div id="loginPage">
   <h2>📧 ShopMail</h2>
   <p>Send promos to all your customers at once!</p>
   <div class="card">
-    <h3>Login / Sign Up</h3>
-    <input id="email" placeholder="Email">
-    <input id="password" type="password" placeholder="Password">
-    <input id="confirmPassword" type="password" placeholder="Confirm Password (for Sign Up only)">
-    <label style="font-size:14px"><input type="checkbox" style="width:auto" onchange="document.getElementById('password').type=this.checked?'text':'password';document.getElementById('confirmPassword').type=this.checked?'text':'password';"> Show password</label>
-    <input id="fullname" placeholder="Full Name (for signup)">
-    <button id="signupBtn" onclick="signup()">Sign Up</button>
-    <button id="loginBtn" onclick="login()" style="background:#fff;color:#000">Login</button>
+    <h3>Login / Sign Up with Code</h3>
+    <p style="font-size:14px;color:#666">No password needed. We will send you a 6-digit code.</p>
+    <input id="email" placeholder="Your Email e.g. you@gmail.com">
+    <input id="fullname" placeholder="Full Name (for first time only)">
+    <button id="sendBtn" onclick="sendCode()">📩 Send 6-Digit Code</button>
     <p id="authError" style="color:red;text-align:center"></p>
+    <p style="font-size:13px;text-align:center;color:#666">New user? Just enter your email and tap Send Code. We will create your account.</p>
   </div>
 </div>
 
@@ -38,11 +36,11 @@ button{background:#ea580c;color:#fff;font-weight:bold}
   <div class="card" style="text-align:center">
     <p style="font-size:50px">🔢</p>
     <h3>We sent you a 6-digit code</h3>
-    <p>Go to <b id="otpEmailText"></b> and check your inbox (and Spam).<br>Enter the 6-digit code below:</p>
+    <p>Go to <b id="otpEmailText"></b> and check your inbox <b>and Spam</b>.<br>Look for the 6 numbers in the email and enter them below:</p>
     <input id="otpCode" class="otp-input" placeholder="123456" maxlength="6" inputmode="numeric">
     <button id="verifyBtn" onclick="verifyOtpCode()">✅ Verify Code</button>
     <button onclick="resendOtp()" style="background:#fff;color:#000;border:1px solid #ddd">Resend Code</button>
-    <button onclick="backToLogin()" style="background:#333">⬅ Back to Login</button>
+    <button onclick="backToLogin()" style="background:#333">⬅ Back / Change Email</button>
     <p id="otpError" style="color:red;text-align:center"></p>
   </div>
 </div>
@@ -104,6 +102,7 @@ try{
 
 let credits = 50;
 let pendingEmail = "";
+let pendingName = "";
 
 function showDashboard(email){
   document.getElementById('loginPage').style.display='none';
@@ -143,47 +142,37 @@ function backToLogin(){
   document.getElementById('otpPage').style.display='none';
   document.getElementById('loginPage').style.display='block';
 }
-async function signup(){
-  const btn = document.getElementById('signupBtn');
+
+async function sendCode(){
+  const btn = document.getElementById('sendBtn');
   const errEl = document.getElementById('authError');
   errEl.innerText = '';
   if(!supabase){ errEl.innerText="Supabase did not load. Check internet, close tab and open again."; alert("Supabase did not load. Please check your internet."); return; }
-  const email=document.getElementById('email').value.trim();
-  const password=document.getElementById('password').value;
-  const confirm=document.getElementById('confirmPassword').value;
-  const full_name=document.getElementById('fullname').value;
+  const email = document.getElementById('email').value.trim();
+  pendingName = document.getElementById('fullname').value.trim();
   if(!email.includes('@')){ errEl.innerText="Please enter a valid email"; return; }
-  if(password !== confirm){ errEl.innerText="Passwords do not match!"; alert("Passwords do not match!"); return; }
-  if(password.length < 6){ errEl.innerText="Password must be at least 6 characters"; alert("Password must be at least 6 characters"); return; }
-  btn.innerText = "Sending 6-digit code...";
+  btn.innerText = "Sending code... please wait...";
   btn.disabled = true;
   try{
-    const {data,error}=await supabase.auth.signUp({email,password});
+    const {data, error} = await supabase.auth.signInWithOtp({
+      email: email,
+      options: { shouldCreateUser: true }
+    });
     if(error){
       errEl.innerText = error.message;
       alert(error.message);
-      btn.innerText = "Sign Up";
-      btn.disabled = false;
-      return;
-    }
-    if(data.user){
-      try{ await supabase.from('profiles').insert([{id:data.user.id,email,full_name}]); }catch(e){}
-    }
-    // If user already verified, go straight to dashboard
-    if(data.session){
-      showDashboard(email);
     } else {
-      // Show OTP page - code was sent to email
       showOtpPage(email);
-      alert("We sent a 6-digit code to " + email + ". Check your inbox and Spam!");
+      alert("We sent a 6-digit code to " + email + ". Check your inbox and Spam! Look for the 6 numbers in the email.");
     }
   }catch(e){
     errEl.innerText = "Something went wrong: " + e.message;
     alert("Something went wrong: " + e.message);
   }
-  btn.innerText = "Sign Up";
+  btn.innerText = "📩 Send 6-Digit Code";
   btn.disabled = false;
 }
+
 async function verifyOtpCode(){
   const code = document.getElementById('otpCode').value.trim();
   const errEl = document.getElementById('otpError');
@@ -194,15 +183,17 @@ async function verifyOtpCode(){
   btn.innerText = "Verifying...";
   btn.disabled = true;
   try{
-    // Try signup type first, then email type
-    let result = await supabase.auth.verifyOtp({email: pendingEmail, token: code, type: 'signup'});
-    if(result.error){
-      result = await supabase.auth.verifyOtp({email: pendingEmail, token: code, type: 'email'});
-    }
-    if(result.error){
-      errEl.innerText = result.error.message;
-      alert(result.error.message);
+    const {data, error} = await supabase.auth.verifyOtp({email: pendingEmail, token: code, type: 'email'});
+    if(error){
+      errEl.innerText = error.message;
+      alert(error.message);
     } else {
+      // Save profile for first-time user - don't block if it fails
+      try{
+        if(data.user && pendingName){
+          await supabase.from('profiles').insert([{id:data.user.id, email:pendingEmail, full_name:pendingName}]);
+        }
+      }catch(e){}
       alert("✅ Code correct! Welcome!");
       showDashboard(pendingEmail);
       loadHistory();
@@ -214,43 +205,15 @@ async function verifyOtpCode(){
   btn.innerText = "✅ Verify Code";
   btn.disabled = false;
 }
+
 async function resendOtp(){
   if(!pendingEmail) pendingEmail = document.getElementById('email').value.trim();
   if(!supabase){ alert("Supabase did not load."); return; }
-  const {error}=await supabase.auth.resend({type:'signup', email: pendingEmail});
+  const {error} = await supabase.auth.signInWithOtp({email: pendingEmail, options:{shouldCreateUser:true}});
   if(error) alert(error.message);
   else alert("New 6-digit code sent to "+pendingEmail+"! Check inbox and Spam.");
 }
-async function login(){
-  const errEl = document.getElementById('authError');
-  errEl.innerText = '';
-  if(!supabase){ errEl.innerText="Supabase did not load. Check internet."; alert("Supabase did not load."); return; }
-  const email=document.getElementById('email').value.trim();
-  const password=document.getElementById('password').value;
-  if(!email.includes('@')){ errEl.innerText="Please enter a valid email"; return; }
-  const btn = document.getElementById('loginBtn');
-  btn.innerText = "Logging in...";
-  try{
-    const {data,error}=await supabase.auth.signInWithPassword({email,password});
-    if(error){
-      if(error.message.toLowerCase().includes('confirm') || error.message.toLowerCase().includes('not confirmed') || error.message.toLowerCase().includes('verify')){
-        alert("Your email is not confirmed yet. We will send you a new 6-digit code.");
-        await supabase.auth.resend({type:'signup', email: email});
-        showOtpPage(email);
-      } else {
-        errEl.innerText = error.message;
-        alert(error.message);
-      }
-      btn.innerText = "Login";
-      return;
-    }
-    showDashboard(email); loadHistory();
-  }catch(e){
-    errEl.innerText = e.message;
-    alert(e.message);
-  }
-  btn.innerText = "Login";
-}
+
 async function logout(){ if(supabase) await supabase.auth.signOut(); showLogin(); }
 async function checkUser(){
   if(!supabase) return;
@@ -287,3 +250,13 @@ checkUser();
 </script>
 </body>
 </html>
+
+
+
+
+
+
+
+
+
+ 
